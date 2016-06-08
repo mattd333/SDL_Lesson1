@@ -3,144 +3,235 @@ and may not be redistributed without written permission.*/
 
 //Using SDL and standard IO
 #include <SDL2/SDL.h>
-#include <stdio.h>
+#include <iostream>
 
-//Screen dimension constants
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+//Window dimension constants
+int WINDOW_WIDTH = 300;
+int WINDOW_HEIGHT = 400;
+int WINDOW_POSITION_X = 100;
+int WINDOW_POSITION_Y = 200;
 
-//Starts up SDL and creates window
-bool init();
+//Pointer to the window
+SDL_Window* window;
+//Pointer to its renderer
+SDL_Renderer* renderer;
 
-//Loads media
-bool loadMedia();
+//Function that initializes all the overhead -- SDL, window, renderer
+int Initialize_everything();
 
-//Frees media and shuts down SDL
-void close();
+//Function that intializes SDL
+bool Initialize_SDL();
 
-//The window we'll be rendering to
-SDL_Window* gWindow = NULL;
-	
-//The surface contained by the window
-SDL_Surface* gScreenSurface = NULL;
+//Function that creates and initializes the window
+bool Initialize_window();
 
-//The image we will load and show on the screen
-SDL_Surface* gHelloWorld = NULL;
+//Function that creates renderer
+bool Create_renderer();
+//Function that sets up renderer
+void Set_up_renderer();
+
+//Function that renders the image to the screen at the end of each main game loop
+void Render();
+
+//The game engine
+void Run_game();
+
+SDL_Rect Player_position;
+
+using namespace std;
 
 
 
-
-
-
-//*************************************************************************
-//****** MAIN FUNCTION STARTS HERE ****************************************
-//*************************************************************************
+//******************************************************************************************************
+//******************************************************************************************************
+//******************************************************************************************************
 int main( int argc, char* args[] )
 {
-	//Start up SDL and create window
-	if( !init() )
-	{
-		printf( "Failed to initialize!\n" );
-	}
-	else
-	{
-		//Load media
-		if( !loadMedia() )
-		{
-			printf( "Failed to load media!\n" );
-		}
-		else
-		{
-			//Apply the image
-			SDL_BlitSurface( gHelloWorld, NULL, gScreenSurface, NULL );
-			
-			//Update the surface
-			SDL_UpdateWindowSurface( gWindow );
+    int Initialization_return_value = Initialize_everything();
+	if ( Initialization_return_value != 0 ) 
+	{	
+       cout<< "ERROR: In main, error code " << Initialization_return_value << "\n";
+       return(-1);
+    }
 
-			//Wait two seconds
-			SDL_Delay( 2000 );
-		}
-	}
+	// Initialize player position
+	Player_position.x = 20;
+	Player_position.y = 20;
+	Player_position.w = 20;
+	Player_position.h = 20;
 
-	//Free resources and close SDL
-	close();
-
-	return 0;
+	Run_game();
+    
+    
+    return(0);
 }
-//*************************************************************************
-//****** MAIN FUNCTION ENDS HERE ******************************************
-//*************************************************************************
+//******************************************************************************************************
+//******************* END OF MAIN FUNCTION *************************************************************
+//******************************************************************************************************
 
 
-
-
-
-//******************************************************************************
-bool init()
+//******************************************************************************************************
+int Initialize_everything()
 {
-	//Initialization flag
-	bool success = true;
+ bool SDL_initialized_successfully = Initialize_SDL();
+ if ( SDL_initialized_successfully == false )
+ {
+    return(-1);
+ }
+ 
+ bool Window_created_successfully = Initialize_window();
+ if ( Window_created_successfully == false )
+ {
+    return(-2);
+ }
+ 
+ bool Renderer_created_successfully = Create_renderer();
+ if ( Renderer_created_successfully == false )
+ {
+    return(-3);
+ }
+ 
+ return(0);
 
-	//Initialize SDL
-    int initialized_successfully = SDL_Init( SDL_INIT_VIDEO );
-	if( initialized_successfully < 0 )
-	{
-		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
-		success = false;
-	}
-	else
-	{
-		//Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
-		if( gWindow == NULL )
-		{
-			printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
-			success = false;
-		}
-		else
-		{
-			//Get window surface
-			gScreenSurface = SDL_GetWindowSurface( gWindow );
-		}
-	}
-
-	return success;
 }
-//******************************************************************************
+//******************************************************************************************************
 
 
-//******************************************************************************
-bool loadMedia()
+//******************************************************************************************************
+bool Initialize_SDL()
 {
-	//Loading success flag
-	bool success = true;
-
-	//Load splash image
-	gHelloWorld = SDL_LoadBMP( "images/hello_world.bmp" );
-	if( gHelloWorld == NULL )
-	{
-		printf( "Unable to load image %s! SDL Error: %s\n", "02_getting_an_image_on_the_screen/hello_world.bmp", SDL_GetError() );
-		success = false;
-	}
-
-	return success;
+   int SDL_initialized_successfully = SDL_Init( SDL_INIT_EVERYTHING );
+   if ( SDL_initialized_successfully != 0 )
+   {
+      cout<< "ERROR: In 'Initialize_SDL()', SDL failed to initialize: " << SDL_GetError() << "\n";
+      return( false );  
+   }
+   
+   return(true);
 }
-//******************************************************************************
+//******************************************************************************************************
 
 
-//******************************************************************************
-void close()
+//******************************************************************************************************
+bool Initialize_window()
 {
-	//Deallocate surface
-	SDL_FreeSurface( gHelloWorld );
-	gHelloWorld = NULL;
-
-	//Destroy window
-	SDL_DestroyWindow( gWindow );
-	gWindow = NULL;
-
-	//Quit SDL subsystems
-	SDL_Quit();
+   window = SDL_CreateWindow( "Window title", WINDOW_POSITION_X, WINDOW_POSITION_Y, WINDOW_WIDTH, WINDOW_HEIGHT, 0 );
+   
+   if ( window == nullptr )
+   {
+      cout<< "ERROR: In 'Create_window()', Failed to create window: " << SDL_GetError() << "\n";
+      return( false );
+   }
+   
+   return( true );
 }
-//******************************************************************************
+//******************************************************************************************************
 
+
+//******************************************************************************************************
+bool Create_renderer()
+{
+ renderer = SDL_CreateRenderer( window, -1, 0 );
+ 
+ if ( renderer == nullptr )
+ {
+    cout<< "ERROR: In 'Initialize_renderer()', Failed to create renderer: " << SDL_GetError() << "\n";
+    return( false ); 
+ }
+ 
+ return( true );
+
+}
+//******************************************************************************************************
+
+
+//******************************************************************************************************
+void Set_up_renderer()
+{
+   //Set size of renderer to same size as window
+   SDL_RenderSetLogicalSize( renderer, WINDOW_WIDTH, WINDOW_HEIGHT );
+   
+   //Set color of renderer to green
+   SDL_SetRenderDrawColor( renderer, 0 , 255, 0, 255 ); 
+}
+//******************************************************************************************************
+
+
+//******************************************************************************************************
+void Render()
+{
+   //Clear the window and make it all green
+   SDL_RenderClear( renderer );
+   
+   //Change color to blue
+   SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
+   
+   // Render player
+   SDL_RenderFillRect( renderer, &Player_position );
+   
+   //Change color to green 
+   SDL_SetRenderDrawColor( renderer, 0, 255, 0, 255 );
+   
+   //Render the changes above
+   SDL_RenderPresent( renderer );
+   
+}
+//******************************************************************************************************
+
+
+//******************************************************************************************************
+void Run_game()
+{
+
+ bool Main_loop = true;
+ 
+ while( Main_loop == true )
+ {
+    SDL_Event event;
+    while ( SDL_PollEvent( &event ) )
+    {  
+       if ( event.type == SDL_QUIT )
+       {
+          Main_loop = false;
+          
+          //Wait two seconds
+          SDL_Delay( 2000 );
+          
+       } //end of quit check
+       else if ( event.type == SDL_KEYDOWN )
+       {
+          switch ( event.key.keysym.sym )
+          {
+             case SDLK_RIGHT:
+                Player_position.x = Player_position.x + 5;
+                break;
+             
+             case SDLK_LEFT:
+                Player_position.x = Player_position.x - 5;
+                break;
+                
+             //NOTE: In SDL, (0,0) is left,top corner, as y increases coordinate goes down screen
+             case SDLK_DOWN:
+                Player_position.y = Player_position.y + 5;
+                break;
+                
+             case SDLK_UP:
+                Player_position.y = Player_position.y - 5;
+                break;
+                
+             default:
+                break;                                                        
+          } //end of keydown switch cases
+       } //end of keydown check
+       
+    } //end of event polling
+    
+    Render();
+    
+    //Add a 16 ms delay to make game run at approximately 60 fps
+    SDL_Delay( 16 );
+  
+ } // end of main game loop
+
+}
+//******************************************************************************************************
